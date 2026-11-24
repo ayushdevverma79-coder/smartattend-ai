@@ -1,40 +1,36 @@
-name: Build Android APK
+name: Extract v0 Zip
 
 on:
   push:
-    branches: [ "main" ]
-  workflow_dispatch:
+    paths:
+      - '*.zip'
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  extract:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip project
+      - name: Unzip and move files to root
         run: |
           unzip -o "*.zip" -d extracted_project
-          PROJECT_DIR=$(dirname $(find extracted_project -name "settings.gradle*" | head -n 1))
-          echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+          
+          # Find package.json to locate the true project root
+          PKG_PATH=$(find extracted_project -name "package.json" | head -n 1)
+          TARGET_DIR=$(dirname "$PKG_PATH")
+          
+          # Move all extracted files (including hidden dotfiles) to the repo root
+          cp -rf "$TARGET_DIR"/. .
+          rm -rf extracted_project *.zip
 
-      - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v4
-        with:
-          gradle-version: '8.7'
-
-      - name: Build Debug APK
-        working-directory: ${{ env.PROJECT_DIR }}
-        run: gradle assembleDebug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: app-debug
-          path: "**/build/outputs/apk/debug/*.apk"
+      - name: Commit and push extracted files
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@://github.com"
+          git add .
+          git commit -m "Extract v0 project files" || exit 0
+          git push
