@@ -1,9 +1,7 @@
-name: Extract v0 Zip
+name: Extract Zip
 
 on:
   push:
-    paths:
-      - '*.zip'
   workflow_dispatch:
 
 permissions:
@@ -16,16 +14,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Unzip and move files to root
+      - name: Unzip project
         run: |
-          unzip -o "*.zip" -d extracted_project
-          cp -rf extracted_project/. .
-          rm -rf extracted_project *.zip
+          if [ -f "project.zip" ]; then
+            unzip -o project.zip
+            rm -f project.zip
+          fi
 
-      - name: Commit and push extracted files
+      - name: Push extracted files
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@://github.com"
           git add .
-          git commit -m "Extract v0 project files" || exit 0
+          git commit -m "Extract project.zip" || exit 0
           git push
