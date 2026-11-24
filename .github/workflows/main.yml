@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '*.zip'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -18,13 +19,7 @@ jobs:
       - name: Unzip and move files to root
         run: |
           unzip -o "*.zip" -d extracted_project
-          
-          # Find package.json to locate the true project root
-          PKG_PATH=$(find extracted_project -name "package.json" | head -n 1)
-          TARGET_DIR=$(dirname "$PKG_PATH")
-          
-          # Move all extracted files (including hidden dotfiles) to the repo root
-          cp -rf "$TARGET_DIR"/. .
+          cp -rf extracted_project/. .
           rm -rf extracted_project *.zip
 
       - name: Commit and push extracted files
